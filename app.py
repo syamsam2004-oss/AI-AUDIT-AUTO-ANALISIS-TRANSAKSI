@@ -1,31 +1,30 @@
 import streamlit as st
 import pandas as pd
-from groq import Groq
+from groq import Client   # FIX IMPORT
 
-# ==========================
-# 1. SETTING GROQ API
-# ==========================
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# ======================
+# 1. GROQ API CLIENT
+# ======================
+client = Client(api_key=st.secrets["GROQ_API_KEY"])   # FIX CLIENT
 
-# ==========================
-# 2. FUNGSI ANALISIS DENGAN AI
-# ==========================
+# ======================
+# 2. AI AUDIT FUNCTION
+# ======================
 def audit_with_ai(text):
     prompt = f"""
-    Kamu adalah auditor profesional.
+    Kamu adalah auditor profesional. 
+    Analisis transaksi berikut dan berikan:
+    - Temuan utama
+    - Risiko
+    - Indikasi transaksi mencurigakan
+    - Rekomendasi audit
+    - Kesimpulan
 
-    Analisis transaksi berikut secara rinci lalu berikan:
-    1. Temuan utama
-    2. Analisis risiko
-    3. Indikasi transaksi mencurigakan
-    4. Rekomendasi audit
-    5. Kesimpulan ringkas
-
-    Data Transaksi:
+    Data transaksi:
     {text}
     """
 
-    response = client.chat.completions.create(
+    response = client.chat.completions.create(   # FIX API CALL
         model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": "Kamu adalah auditor keuangan profesional."},
@@ -37,10 +36,9 @@ def audit_with_ai(text):
 
     return response.choices[0].message["content"]
 
-
-# ==========================
-# 3. UI STREAMLIT
-# ==========================
+# ======================
+# 3. STREAMLIT UI
+# ======================
 st.title("🔍 AI Audit Bot + Auto Analisis Transaksi")
 st.write("Upload file Excel transaksi dan sistem akan melakukan analisis audit otomatis.")
 
@@ -52,12 +50,10 @@ if uploaded_file:
         st.subheader("📄 Data Transaksi")
         st.dataframe(df)
 
-        # Convert ke text untuk AI
         csv_text = df.to_csv(index=False)
 
         st.subheader("🤖 Hasil Analisis AI")
-
-        with st.spinner("Sedang menganalisis transaksi…"):
+        with st.spinner("Sedang menganalisis..."):
             result = audit_with_ai(csv_text)
 
         st.success("Analisis selesai!")
