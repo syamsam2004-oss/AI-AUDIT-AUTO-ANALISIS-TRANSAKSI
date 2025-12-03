@@ -1,64 +1,64 @@
 import streamlit as st
 import pandas as pd
-from groq import Client   # FIX IMPORT
+from groq import Groq
 
-# ======================
-# 1. GROQ API CLIENT
-# ======================
-client = Client(api_key=st.secrets["GROQ_API_KEY"])   # FIX CLIENT
+# ===========================
+# KONFIGURASI API
+# ===========================
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ======================
-# 2. AI AUDIT FUNCTION
-# ======================
-def audit_with_ai(text):
+# ===========================
+# FUNGSI ANALISIS AI
+# ===========================
+def analisis_transaksi(df):
+    # Convert data ke teks untuk dikirim ke AI
+    data_text = df.to_csv(index=False)
+
     prompt = f"""
-    Kamu adalah auditor profesional. 
-    Analisis transaksi berikut dan berikan:
-    - Temuan utama
-    - Risiko
-    - Indikasi transaksi mencurigakan
-    - Rekomendasi audit
-    - Kesimpulan
+Kamu adalah AI Auditor profesional. Analisis data transaksi berikut:
 
-    Data transaksi:
-    {text}
-    """
+{data_text}
 
-    response = client.chat.completions.create(   # FIX API CALL
+Berikan output dengan struktur:
+1. Temuan utama
+2. Transaksi mencurigakan
+3. Pola anomali
+4. Rekomendasi audit
+
+Jawaban harus rapi dan mudah dibaca.
+"""
+
+    response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
-            {"role": "system", "content": "Kamu adalah auditor keuangan profesional."},
+            {"role": "system", "content": "Kamu adalah auditor berpengalaman."},
             {"role": "user", "content": prompt}
         ],
-        temperature=0.2,
-        max_tokens=1500
+        max_tokens=500
     )
 
-    return response.choices[0].message["content"]
+    return response.choices[0].message.content
 
-# ======================
-# 3. STREAMLIT UI
-# ======================
-st.title("🔍 AI Audit Bot + Auto Analisis Transaksi")
-st.write("Upload file Excel transaksi dan sistem akan melakukan analisis audit otomatis.")
 
-uploaded_file = st.file_uploader("Upload File Excel", type=["xlsx"])
+# ===========================
+# UI STREAMLIT
+# ===========================
+st.title("📊 AI Audit + Auto Analisis Transaksi")
+st.write("Unggah file Excel untuk dianalisis AI Auditor.")
+
+uploaded_file = st.file_uploader("Upload file Excel (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
-    try:
-        df = pd.read_excel(uploaded_file)
-        st.subheader("📄 Data Transaksi")
-        st.dataframe(df)
+    df = pd.read_excel(uploaded_file)
+    st.subheader("📄 Data Transaksi")
+    st.dataframe(df)
 
-        csv_text = df.to_csv(index=False)
-
-        st.subheader("🤖 Hasil Analisis AI")
-        with st.spinner("Sedang menganalisis..."):
-            result = audit_with_ai(csv_text)
-
-        st.success("Analisis selesai!")
-        st.write(result)
-
-    except Exception as e:
-        st.error("Terjadi kesalahan saat membaca file.")
-        st.text(str(e))
+    if st.button("🔍 Jalankan Analisis AI"):
+        with st.spinner("Sedang menganalisis data..."):
+            try:
+                hasil = analisis_transaksi(df)
+                st.subheader("🧠 Hasil Analisis AI")
+                st.write(hasil)
+            except Exception as e:
+                st.error(f"Error: {e}")
+                st.info("Periksa API Key atau format file Excel kamu.")
